@@ -1,7 +1,5 @@
 import './index.css';
 
-console.log('Frontend module loaded');
-
 // Initialize form date/time handling
 document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.querySelector('input[name="dueDate"]');
@@ -11,28 +9,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastMsg = document.getElementById('api-test-message');
     const statusPulse = document.getElementById('api-pulse');
 
-    function showToast(message, success = true) {
+    // Fixed base classes applied once
+    if (statusPulse) {
+        statusPulse.className = 'w-4 h-4 rounded-full animate-pulse absolute top-2 right-2';
+    }
+
+    function showToast(message, success = true, details = null) {
         if (!toast || !toastMsg || !statusPulse) return;
-        toastMsg.textContent = message;
+        // Set color only (base classes remain)
+        statusPulse.style.backgroundColor = success ? '#22c55e' /* green-500 */ : '#ef4444' /* red-500 */;
+
+        // Guard against missing details
+        const formatted_due_date = (details && details.due_date)
+            ? String(details.due_date).split('T')[0]
+            : null;
+
+        // Compose message with optional details
+        if (details && typeof details === 'object') {
+            const summary = [
+                details.title ? ` · Title: ${details.title}` : null,
+                details.status ? `Status: ${details.status}` : null,
+                details.due_date ? `Due Date: ${formatted_due_date}` : null,
+                details.due_time ? `Time: ${details.due_time}` : null,
+            ].filter(Boolean).join('\n · ');
+            toastMsg.textContent = summary ? `${message}\n${summary}` : message;
+        } else {
+            toastMsg.textContent = message;
+        }
+
+        // Show and animate
         toast.style.display = 'flex';
         toast.style.opacity = '0';
         toast.style.transition = 'opacity 300ms ease';
-        // Pulse color
-        statusPulse.className = success
-            ? 'w-4 h-4 rounded-full bg-green-500 animate-pulse absolute top-2 right-2'
-            : 'w-4 h-4 rounded-full bg-red-500 animate-pulse absolute top-2 right-2';
-
-        // Fade in
-        requestAnimationFrame(() => {
-            toast.style.opacity = '1';
-        });
-
-        // Fade out after 3s
+        requestAnimationFrame(() => { toast.style.opacity = '1'; });
         setTimeout(() => {
             toast.style.opacity = '0';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 300);
+            setTimeout(() => { toast.style.display = 'none'; }, 300);
         }, 3000);
     }
 
@@ -41,17 +53,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dateInput) {
         dateInput.value = today;
         dateInput.min = today;
-        
-        // Custom validation message
-        dateInput.addEventListener('input', (e) => {
-            const selectedDate = new Date(e.target.value);
-            const currentDate = new Date(today);
-            
-            if (selectedDate < currentDate) {
-                e.target.setCustomValidity('Please select a future date');
-            } else {
-                e.target.setCustomValidity('');
+
+        // Custom validation message and immediate feedback
+        const validateDate = (el) => {
+            const val = el.value;
+            if (!val) {
+                el.setCustomValidity('Please select a due date');
+                return false;
             }
+            const selectedDate = new Date(val + 'T00:00');
+            const currentDate = new Date(today + 'T00:00');
+            if (selectedDate < currentDate) {
+                el.setCustomValidity('Please select a future date');
+                return false;
+            }
+            el.setCustomValidity('');
+            return true;
+        };
+
+        dateInput.addEventListener('input', (e) => {
+            const ok = validateDate(e.target);
+            if (!ok) e.target.reportValidity();
+        });
+
+        // Show message when trying to submit with invalid date
+        dateInput.addEventListener('invalid', (e) => {
+            e.preventDefault();
+            showToast(e.target.validationMessage || 'Invalid due date', false);
         });
     }
 
@@ -63,12 +91,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
+            // Native validity first
+            if (dateInput && !dateInput.checkValidity()) {
+                dateInput.reportValidity();
+                showToast(dateInput.validationMessage || 'Invalid due date', false);
+                dateInput.focus();
+                return;
+            }
+            if (timeInput && !timeInput.value) {
+                timeInput.setCustomValidity('Please select a time');
+                timeInput.reportValidity();
+                showToast('Please select a time', false);
+                timeInput.focus();
+                return;
+            } else if (timeInput) {
+                timeInput.setCustomValidity('');
+            }
+
             // Additional validation: check if date is in the future
             const selectedDate = new Date(data.dueDate + 'T' + data.time);
             const now = new Date();
             
+            // Re-check native validity first
             if (selectedDate <= now) {
                 showToast('Please select a future date and time', false);
+                if (dateInput) dateInput.focus();
                 return;
             }
 
@@ -91,7 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                showToast('Task saved!', true);
+                // Extend toast with confirmation of what was saved
+                const saved = payload?.task || null;
+                showToast('Task saved!', true, saved ?? {
+                    title: data.title,
+                    description: data.description || null,
+                    status: data.status,
+                    due_date: data.dueDate,
+                    due_time: data.time,
+                });
                 form.reset();
                 if (dateInput) {
                     dateInput.value = today; // reset to today
