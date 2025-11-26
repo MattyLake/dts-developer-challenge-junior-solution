@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Task Form</title>
+    </head>
+    <body class="min-h-screen bg-linear-to-tr from-purple-500 to-purple-900 flex items-center justify-center p-6">
+        <main class="w-full max-w-lg">
+            <form class="bg-white/95 rounded-2xl shadow-xl p-6 sm:p-8">
+                <h1 class="text-2xl font-semibold text-gray-800 mb-4">Create Task</h1>
+
+                <label class="block mb-3">
+                    <span class="text-sm font-medium text-gray-700">Title</span>
+                    <input type="text" name="title" required
+                                class="mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300" 
+                                placeholder="Task title" />
+                </label>
+
+                <label class="block mb-3">
+                    <span class="text-sm font-medium text-gray-700">Description <span class="text-xs text-gray-400">(optional)</span></span>
+                    <textarea name="description" rows="3"
+                                        class="mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                                        placeholder="More details about the task"></textarea>
+                </label>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <label class="block">
+                        <span class="text-sm font-medium text-gray-700">Status</span>
+                        <select name="status" class="mt-1 block w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300">
+                            <option>To Do</option>
+                            <option>In Progress</option>
+                            <option>Done</option>
+                        </select>
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Due date</span>
+                            <input type="date" name="dueDate"
+                                        class="mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300" />
+                        </label>
+
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Time</span>
+                            <input type="time" name="time"
+                                        class="mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300" value="12:00"/>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex items-center rounded-md bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-300">
+                        Save Task
+                    </button>
+                </div>
+            </form>
+        </main>
+        <!-- Toast container (bottom-right) -->
+        <div id="api-test" class="fixed bottom-4 right-4 hidden items-center gap-3 rounded-lg bg-white/95 shadow-lg border border-gray-200 px-4 py-3 min-w-[260px]">
+            <div id="api-pulse" class="w-4 h-4 rounded-full bg-blue-500 absolute top-2 left-2"></div>
+            <div class="text-sm text-gray-800" id="api-test-message">Ready</div>
+        </div>
+    </body>
+</html>

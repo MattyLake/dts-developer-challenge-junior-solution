@@ -1,0 +1,65 @@
+services:
+  # 1. PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${ROOT_DB_PASSWORD}
+      POSTGRES_DB: app_database
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"] # Checks if the DB is accepting connections
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. API Service
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: api_service
+    restart: always
+    ports: 
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+
+      DB_ROOT_USER: postgres
+      DB_ROOT_PASSWORD: ${ROOT_DB_PASSWORD}
+
+      API_DB_USER: my_api_user
+      API_DB_PASSWORD: ${API_DB_PASSWORD}
+      DB_NAME: app_database
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >-
+      sh -c "
+      set -ex;
+      echo 'Running DB setup';
+      node setup-db.js;
+      echo 'Running migrations';
+      npx knex migrate:latest;
+      echo 'Starting API';
+      node api.js
+      "
+
+  # 3. Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend_service
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  postgres_data:
